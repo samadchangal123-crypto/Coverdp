@@ -9,7 +9,6 @@ const upload = multer({ dest: 'uploads/' });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Cache directory
 const cacheDir = path.join(__dirname, 'cache');
 if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 if (!fs.existsSync('uploads/')) fs.mkdirSync('uploads/');
@@ -70,114 +69,526 @@ async function processImage(imageBuffer, styleId) {
 }
 
 const getHTML = () => `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MISS ALIYA - Cover DP Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>✨ MISS ALIYA | Premium Cover DP Studio ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#ff6b6b,#c06c84,#6c5b7b,#355c7d);min-height:100vh;padding:20px;}
-.container{max-width:1200px;margin:0 auto;}
-.header{text-align:center;margin-bottom:30px;}
-.header h1{font-size:3rem;color:white;text-shadow:2px 2px 5px black;}
-.badge{background:rgba(255,255,255,0.2);padding:8px 20px;border-radius:50px;color:white;display:inline-block;}
-.main-card{background:white;border-radius:30px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
-.preview-box{background:#f0f0f0;border-radius:20px;padding:20px;min-height:350px;display:flex;align-items:center;justify-content:center;border:3px dashed #c06c84;margin-bottom:20px;}
-.preview-image{max-width:100%;max-height:300px;border-radius:15px;}
-.style-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:15px;margin:20px 0;}
-.style-btn{background:linear-gradient(135deg,#667eea,#764ba2);border:none;padding:15px;border-radius:15px;color:white;font-weight:bold;cursor:pointer;}
-.style-btn.selected{background:linear-gradient(135deg,#f093fb,#f5576c);}
-.upload-label{display:block;background:linear-gradient(135deg,#667eea,#764ba2);color:white;text-align:center;padding:15px;border-radius:15px;cursor:pointer;margin:20px 0;}
-.create-btn{width:100%;background:linear-gradient(135deg,#ff6b6b,#c06c84);border:none;padding:18px;border-radius:15px;color:white;font-size:1.2rem;font-weight:bold;cursor:pointer;}
-.create-btn:disabled{opacity:0.6;}
-.result-area{margin-top:20px;text-align:center;display:none;}
-.result-image{max-width:100%;border-radius:15px;margin:15px 0;}
-.download-btn{display:inline-block;background:#4CAF50;color:white;padding:12px 30px;border-radius:10px;text-decoration:none;}
-.loading{display:none;text-align:center;padding:20px;}
-.spinner{width:50px;height:50px;border:4px solid #f3f3f3;border-top:4px solid #c06c84;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto;}
-@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-.owner{text-align:center;margin-top:20px;color:white;}
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(circle at 0% 0%, #0a0a2a, #1a1a3a, #0d0d2b);
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Animated Background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,107,107,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x bottom;
+    background-size: cover;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Floating Particles Effect */
+  .particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .particle {
+    position: absolute;
+    background: radial-gradient(circle, rgba(255,215,0,0.8), rgba(255,107,107,0.4));
+    border-radius: 50%;
+    animation: float 8s infinite ease-in-out;
+    filter: blur(3px);
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+    50% { transform: translateY(-30px) translateX(20px); opacity: 0.8; }
+  }
+
+  .container {
+    max-width: 1300px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Glowing Header */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: glowPulse 2s infinite, slideDown 0.8s ease;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { text-shadow: 0 0 20px rgba(255,107,107,0.5); }
+    50% { text-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 60px rgba(255,107,107,0.6); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-50px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .header h1 {
+    font-size: 4rem;
+    font-family: 'Orbitron', monospace;
+    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347, #FF6B6B);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  .glow-text {
+    font-size: 1rem;
+    color: #FFD700;
+    letter-spacing: 4px;
+    word-break: keep-all;
+    display: inline-block;
+    background: rgba(0,0,0,0.5);
+    padding: 5px 20px;
+    border-radius: 50px;
+    backdrop-filter: blur(5px);
+  }
+
+  /* Premium Card */
+  .premium-card {
+    background: rgba(20, 20, 50, 0.7);
+    backdrop-filter: blur(15px);
+    border-radius: 40px;
+    padding: 35px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 25px 45px rgba(0,0,0,0.4), 0 0 30px rgba(255,107,107,0.2);
+    transition: all 0.4s;
+  }
+
+  /* Preview Area 3D */
+  .preview-3d {
+    background: linear-gradient(145deg, #1a1a3a, #0f0f2a);
+    border-radius: 30px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255,215,0,0.5);
+    box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: transform 0.3s;
+  }
+
+  .preview-3d:hover {
+    transform: translateY(-5px);
+  }
+
+  .preview-box {
+    background: rgba(0,0,0,0.4);
+    border-radius: 25px;
+    min-height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed rgba(255,215,0,0.5);
+    transition: all 0.3s;
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 340px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 2px solid #FFD700;
+  }
+
+  .placeholder-icon {
+    text-align: center;
+    color: rgba(255,215,0,0.6);
+  }
+
+  .placeholder-icon i {
+    font-size: 5rem;
+    margin-bottom: 15px;
+    display: block;
+  }
+
+  /* Style Grid - Neon Cards */
+  .section-title {
+    text-align: center;
+    margin: 30px 0 20px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #FFD700, #FF6B6B);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .neon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .neon-btn {
+    background: linear-gradient(145deg, #1f1f3f, #15152f);
+    border: none;
+    padding: 18px 10px;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Orbitron', monospace;
+    border: 1px solid rgba(255,215,0,0.3);
+  }
+
+  .neon-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .neon-btn:hover::before {
+    left: 100%;
+  }
+
+  .neon-btn:hover {
+    transform: translateY(-5px) scale(1.05);
+    border-color: #FFD700;
+    box-shadow: 0 0 20px rgba(255,215,0,0.5);
+  }
+
+  .neon-btn.selected {
+    background: linear-gradient(135deg, #FFD700, #FF6B6B);
+    color: #0a0a2a;
+    text-shadow: none;
+    border-color: white;
+    box-shadow: 0 0 30px rgba(255,215,0,0.8);
+  }
+
+  .style-name {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-top: 8px;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    background: linear-gradient(145deg, #1f1f3f, #15152f);
+    border-radius: 25px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px dashed rgba(255,215,0,0.4);
+    margin-bottom: 20px;
+  }
+
+  .upload-zone:hover {
+    border-color: #FFD700;
+    background: linear-gradient(145deg, #25254a, #1a1a3a);
+    transform: scale(1.01);
+  }
+
+  .upload-zone i {
+    font-size: 3rem;
+    color: #FFD700;
+    margin-bottom: 10px;
+  }
+
+  /* Glow Button */
+  .glow-button {
+    width: 100%;
+    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347);
+    border: none;
+    padding: 18px;
+    border-radius: 50px;
+    color: #0a0a2a;
+    font-weight: 800;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 2px;
+  }
+
+  .glow-button:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255,215,0,0.6);
+    letter-spacing: 4px;
+  }
+
+  .glow-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Result Card */
+  .result-card {
+    margin-top: 30px;
+    background: linear-gradient(145deg, #1a1a3a, #0f0f2a);
+    border-radius: 30px;
+    padding: 25px;
+    text-align: center;
+    border: 1px solid #FFD700;
+    display: none;
+  }
+
+  .result-image {
+    max-width: 100%;
+    border-radius: 20px;
+    margin: 20px 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 3px solid #FFD700;
+  }
+
+  .download-neon {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: #4CAF50;
+    color: white;
+    padding: 14px 35px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.3s;
+    margin-top: 10px;
+  }
+
+  .download-neon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #4CAF50;
+  }
+
+  /* Loading Animation */
+  .loading-overlay {
+    display: none;
+    text-align: center;
+    padding: 30px;
+  }
+
+  .ring {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(255,215,0,0.3);
+    border-radius: 50%;
+    border-top-color: #FFD700;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .file-status {
+    text-align: center;
+    margin-top: 10px;
+    color: #FFD700;
+    font-size: 0.85rem;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 35px;
+    color: rgba(255,215,0,0.6);
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 680px) {
+    .header h1 { font-size: 2rem; }
+    .neon-grid { gap: 12px; }
+    .neon-btn { padding: 12px 5px; font-size: 1rem; }
+    .glow-button { font-size: 1rem; padding: 14px; }
+  }
 </style>
 </head>
 <body>
+<div class="particles" id="particles"></div>
 <div class="container">
-<div class="header">
-<h1>MISS ALIYA STUDIO</h1>
-<div class="badge">7 Amazing Styles | Free | Fast</div>
+  <div class="header">
+    <h1>👑 MISS ALIYA STUDIO 👑</h1>
+    <div class="glow-text">✦ PROFESSIONAL COVER DP MAKER ✦</div>
+  </div>
+
+  <div class="premium-card">
+    <div class="preview-3d">
+      <div class="preview-box" id="previewBox">
+        <div class="placeholder-icon">
+          <i class="fas fa-crown"></i>
+          <p>Your Masterpiece Awaits</p>
+          <p style="font-size: 0.8rem;">⬇ Upload & Select Style ⬇</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <i class="fas fa-magic"></i> SELECT YOUR STYLE <i class="fas fa-star"></i>
+    </div>
+    <div class="neon-grid" id="styleGrid">
+      <button class="neon-btn" data-style="1">❶<br><span class="style-name">ROSE</span></button>
+      <button class="neon-btn" data-style="2">❷<br><span class="style-name">HEART</span></button>
+      <button class="neon-btn" data-style="3">❸<br><span class="style-name">ELEGANT</span></button>
+      <button class="neon-btn" data-style="4">❹<br><span class="style-name">GOLDEN</span></button>
+      <button class="neon-btn" data-style="5">❺<br><span class="style-name">PINK</span></button>
+      <button class="neon-btn" data-style="6">❻<br><span class="style-name">MODERN</span></button>
+      <button class="neon-btn" data-style="7">❼<br><span class="style-name">CLASSIC</span></button>
+    </div>
+
+    <div class="upload-zone" id="uploadZone">
+      <i class="fas fa-cloud-upload-alt"></i>
+      <p><strong>CLICK OR DRAG & DROP</strong><br>Your High Quality Photo</p>
+      <input type="file" id="imageInput" accept="image/*" style="display: none;">
+    </div>
+    <div class="file-status" id="fileStatus">⚡ No image selected ⚡</div>
+
+    <button class="glow-button" id="createBtn" disabled>
+      <i class="fas fa-gem"></i> CREATE COVER DP <i class="fas fa-gem"></i>
+    </button>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="ring"></div>
+      <p style="margin-top: 15px; color:#FFD700;">✨ Processing with AI Magic ✨</p>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <h3><i class="fas fa-check-circle"></i> YOUR EXCLUSIVE COVER DP</h3>
+      <img class="result-image" id="resultImg" alt="Cover DP">
+      <a href="#" id="downloadLink" class="download-neon" download="miss_aliya_cover.png">
+        <i class="fas fa-download"></i> DOWNLOAD NOW
+      </a>
+    </div>
+  </div>
+  <div class="footer">
+    <i class="fas fa-heart" style="color:#FF6B6B;"></i> DEVELOPED WITH PRECISION BY MISS ALIYA <i class="fas fa-heart" style="color:#FF6B6B;"></i>
+  </div>
 </div>
-<div class="main-card">
-<div class="preview-box" id="previewBox"> Your Cover DP will appear here</div>
-<div style="text-align:center;font-weight:bold;">SELECT YOUR STYLE</div>
-<div class="style-grid" id="styleGrid">
-<button class="style-btn" data-style="1">1 Style 1</button>
-<button class="style-btn" data-style="2">2 Style 2</button>
-<button class="style-btn" data-style="3">3 Style 3</button>
-<button class="style-btn" data-style="4">4 Style 4</button>
-<button class="style-btn" data-style="5">5 Style 5</button>
-<button class="style-btn" data-style="6">6 Style 6</button>
-<button class="style-btn" data-style="7">7 Style 7</button>
-</div>
-<label class="upload-label" id="uploadLabel">CLICK HERE TO UPLOAD YOUR PHOTO</label>
-<input type="file" id="imageInput" accept="image/*" style="display:none">
-<div id="fileInfo" style="text-align:center;margin:10px">No file selected</div>
-<button class="create-btn" id="createBtn" disabled>CREATE COVER DP</button>
-<div class="loading" id="loading"><div class="spinner"></div><p>Creating your DP...</p></div>
-<div class="result-area" id="resultArea">
-<h3>YOUR COVER DP IS READY!</h3>
-<img class="result-image" id="resultImage">
-<br>
-<a href="#" id="downloadLink" class="download-btn" download="coverdp.png">DOWNLOAD YOUR DP</a>
-</div>
-</div>
-<div class="owner">Developed with love by MISS ALIYA</div>
-</div>
+
 <script>
-let selectedStyle = null;
-let uploadedImage = null;
-document.querySelectorAll('.style-btn').forEach(btn => {
-btn.addEventListener('click', () => {
-document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
-btn.classList.add('selected');
-selectedStyle = btn.dataset.style;
-checkReady();
-});
-});
-document.getElementById('uploadLabel').onclick = () => document.getElementById('imageInput').click();
-document.getElementById('imageInput').onchange = (e) => {
-const file = e.target.files[0];
-if(file){
-uploadedImage = file;
-document.getElementById('fileInfo').innerHTML = 'Selected: ' + file.name;
-const reader = new FileReader();
-reader.onload = (ev) => { document.getElementById('previewBox').innerHTML = '<img src="'+ev.target.result+'" class="preview-image">'; };
-reader.readAsDataURL(file);
-checkReady();
-}
-};
-function checkReady(){ document.getElementById('createBtn').disabled = !(selectedStyle && uploadedImage); }
-document.getElementById('createBtn').onclick = async () => {
-if(!selectedStyle || !uploadedImage) return;
-const formData = new FormData();
-formData.append('image', uploadedImage);
-formData.append('style', selectedStyle);
-document.getElementById('createBtn').disabled = true;
-document.getElementById('loading').style.display = 'block';
-document.getElementById('resultArea').style.display = 'none';
-try{
-const response = await fetch('/create', { method: 'POST', body: formData });
-if(!response.ok) throw new Error('Failed');
-const blob = await response.blob();
-const url = URL.createObjectURL(blob);
-document.getElementById('resultImage').src = url;
-document.getElementById('downloadLink').href = url;
-document.getElementById('resultArea').style.display = 'block';
-}catch(err){ alert('Error: ' + err.message); }
-finally{
-document.getElementById('createBtn').disabled = false;
-document.getElementById('loading').style.display = 'none';
-}
-};
+  function createParticles() {
+    const particlesContainer = document.getElementById('particles');
+    for(let i = 0; i < 45; i++) {
+      const particle = document.createElement('div');
+      particle.classList.add('particle');
+      particle.style.width = Math.random() * 8 + 2 + 'px';
+      particle.style.height = particle.style.width;
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 8 + 's';
+      particle.style.animationDuration = Math.random() * 6 + 5 + 's';
+      particlesContainer.appendChild(particle);
+    }
+  }
+  createParticles();
+
+  let selectedStyle = null;
+  let uploadedImage = null;
+
+  document.querySelectorAll('.neon-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.neon-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedStyle = btn.dataset.style;
+      checkReady();
+    });
+  });
+
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('imageInput');
+  uploadZone.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#FFD700';
+    uploadZone.style.transform = 'scale(1.01)';
+  });
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.style.borderColor = 'rgba(255,215,0,0.4)';
+    uploadZone.style.transform = 'scale(1)';
+  });
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = 'rgba(255,215,0,0.4)';
+    const file = e.dataTransfer.files[0];
+    if(file && file.type.startsWith('image/')) handleImage(file);
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if(e.target.files[0]) handleImage(e.target.files[0]);
+  });
+
+  function handleImage(file) {
+    uploadedImage = file;
+    document.getElementById('fileStatus').innerHTML = '<i class="fas fa-check-circle"></i> Selected: ' + file.name;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('previewBox').innerHTML = '<img src="'+ev.target.result+'" class="preview-image" alt="Preview">';
+    };
+    reader.readAsDataURL(file);
+    checkReady();
+  }
+
+  function checkReady() {
+    document.getElementById('createBtn').disabled = !(selectedStyle && uploadedImage);
+  }
+
+  document.getElementById('createBtn').addEventListener('click', async () => {
+    if(!selectedStyle || !uploadedImage) return;
+    const formData = new FormData();
+    formData.append('image', uploadedImage);
+    formData.append('style', selectedStyle);
+    document.getElementById('createBtn').disabled = true;
+    document.getElementById('loadingOverlay').style.display = 'block';
+    document.getElementById('resultCard').style.display = 'none';
+    try {
+      const response = await fetch('/create', { method: 'POST', body: formData });
+      if(!response.ok) throw new Error('Server Error');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      document.getElementById('resultImg').src = url;
+      document.getElementById('downloadLink').href = url;
+      document.getElementById('resultCard').style.display = 'block';
+    } catch(err) {
+      alert('Error: ' + err.message);
+    } finally {
+      document.getElementById('createBtn').disabled = false;
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+  });
 </script>
 </body>
 </html>`;
@@ -199,4 +610,4 @@ app.post('/create', upload.single('image'), async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log('MISS ALIYA STUDIO running on port', PORT));
+app.listen(PORT, () => console.log('🚀 MISS ALIYA STUDIO RUNNING on port', PORT));
