@@ -1,16 +1,13 @@
 {
-  "name": "miss-aliya-coverdp-studio",
+  "name": "coverdp-studio",
   "version": "1.0.0",
-  "description": "👑 MISS ALIYA - Professional Cover DP Maker with 7 Styles",
-  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.6.0",
-    "jimp": "^0.22.10",
-    "multer": "^1.4.5-lts.1",
-    "form-data": "^4.0.0"
+    "express": "4.18.2",
+    "axios": "1.6.0",
+    "jimp": "0.22.10",
+    "multer": "1.4.5-lts.1"
   }
 }
