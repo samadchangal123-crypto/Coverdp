@@ -13,7 +13,8 @@ const cacheDir = path.join(__dirname, 'cache');
 if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 if (!fs.existsSync('uploads/')) fs.mkdirSync('uploads/');
 
-const templates = {
+// ========== COVER DP TEMPLATES (7) ==========
+const coverTemplates = {
   1: { url: "https://i.ibb.co/0jhSFqMM/c43702d446a6.jpg", shape: "circle", size: 268, posX: 74, posY: 67, name: "Romantic Rose" },
   2: { url: "https://i.ibb.co/9kY65xss/688f96416cc9.jpg", shape: "circle", size: 220, posX: 79, posY: 105, name: "Lovely Heart" },
   3: { url: "https://i.ibb.co/pBkYHvg2/c0a885aa9aaa.jpg", shape: "circle", size: 265, posX: 117, posY: 108, name: "Elegant Frame" },
@@ -23,11 +24,23 @@ const templates = {
   7: { url: "https://i.ibb.co/m5W8TMjj/86de3ad52a9c.jpg", shape: "rectangle", width: 195, height: 265, posX: 520, posY: 95, name: "Classic Border" }
 };
 
-async function downloadTemplate(styleId) {
-  const templatePath = path.join(cacheDir, `template_${styleId}.png`);
+// ========== FRAME DP TEMPLATES (9) ==========
+const frameTemplates = {
+  1: { url: "https://i.ibb.co/jP5RT6mh/59231906c30e.jpg", width: 230, height: 310, posX: 210, posY: 93, name: "Frame 1" },
+  2: { url: "https://i.ibb.co/LXZMTgwK/3ba0f3daebfb.jpg", width: 210, height: 355, posX: 236, posY: 80, name: "Frame 2" },
+  3: { url: "https://i.ibb.co/vCp4xnkV/4ca998d49fb1.jpg", width: 220, height: 300, posX: 126, posY: 84, name: "Frame 3" },
+  4: { url: "https://i.ibb.co/BVq7Txb3/955c5d7c4b60.jpg", width: 212, height: 307, posX: 34, posY: 65, name: "Frame 4" },
+  5: { url: "https://i.ibb.co/s9V2XSF6/b3e1f8cb43d2.jpg", width: 220, height: 310, posX: "auto", posY: 80, name: "Frame 5" },
+  6: { url: "https://i.ibb.co/93gjcXvv/58b3d5968b15.jpg", width: 200, height: 290, posX: 152, posY: 103, name: "Frame 6" },
+  7: { url: "https://i.ibb.co/JWYBCLGw/f063e0ce45e0.jpg", width: 200, height: 330, posX: 111, posY: 18, name: "Frame 7" },
+  8: { url: "https://i.ibb.co/Pv6bhKbK/2d5abf483d1e.jpg", width: 205, height: 300, posX: 34, posY: 71, name: "Frame 8" },
+  9: { url: "https://i.ibb.co/s9dHV7K1/6aa4dc51020a.jpg", width: 200, height: 300, posX: 89, posY: 43, name: "Frame 9" }
+};
+
+async function downloadTemplate(url, styleId, type) {
+  const templatePath = path.join(cacheDir, `${type}_${styleId}.png`);
   if (fs.existsSync(templatePath)) return templatePath;
-  const config = templates[styleId];
-  const response = await axios.get(config.url, { responseType: 'arraybuffer', timeout: 30000 });
+  const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 30000 });
   fs.writeFileSync(templatePath, Buffer.from(response.data));
   return templatePath;
 }
@@ -50,64 +63,139 @@ async function makeCircleImage(buffer, size) {
   return image;
 }
 
-async function processImage(imageBuffer, styleId) {
-  const config = templates[styleId];
-  const templatePath = await downloadTemplate(styleId);
+async function processImage(imageBuffer, type, styleId) {
+  let config, templatePath;
+  
+  if (type === 'cover') {
+    config = coverTemplates[styleId];
+    templatePath = await downloadTemplate(config.url, styleId, 'cover');
+  } else {
+    config = frameTemplates[styleId];
+    templatePath = await downloadTemplate(config.url, styleId, 'frame');
+  }
+  
   let template = await Jimp.read(templatePath);
   let userImage;
-  if (config.shape === "circle") {
+  
+  if (type === 'cover' && config.shape === 'circle') {
     userImage = await makeCircleImage(imageBuffer, config.size);
     template.composite(userImage, config.posX, config.posY);
   } else {
     userImage = await Jimp.read(imageBuffer);
-    userImage.resize(config.width, config.height);
-    template.composite(userImage, config.posX, config.posY);
+    let width = config.width;
+    let height = config.height;
+    userImage.resize(width, height);
+    
+    let posX = config.posX;
+    if (posX === "auto") {
+      posX = (template.bitmap.width - width) / 2;
+    }
+    template.composite(userImage, posX, config.posY);
   }
+  
   const outputPath = path.join(cacheDir, `output_${Date.now()}.png`);
   await template.writeAsync(outputPath);
   return outputPath;
 }
 
+// ========== STUNNING HTML WITH WELCOME SCREEN ==========
 const getHTML = () => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>✨ MISS ALIYA | Premium Cover DP Studio ✨</title>
+<title>👑 MISS ALIYA | PREMIUM DP STUDIO 👑</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Poppins', sans-serif;
     background: radial-gradient(circle at 0% 0%, #0a0a2a, #1a1a3a, #0d0d2b);
     min-height: 100vh;
-    padding: 20px;
-    position: relative;
     overflow-x: hidden;
   }
 
-  /* Animated Background */
-  body::before {
-    content: '';
+  /* Welcome Screen Overlay */
+  .welcome-screen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,107,107,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x bottom;
-    background-size: cover;
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: 0;
+    background: radial-gradient(circle at center, #1a1a3a, #0a0a2a);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeOut 3s ease forwards 2s;
   }
 
-  /* Floating Particles Effect */
+  @keyframes fadeOut {
+    0% { opacity: 1; visibility: visible; }
+    70% { opacity: 1; }
+    100% { opacity: 0; visibility: hidden; }
+  }
+
+  .welcome-card {
+    text-align: center;
+    animation: zoomIn 0.8s ease, glowPulse 2s infinite;
+  }
+
+  @keyframes zoomIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { text-shadow: 0 0 20px #FFD700; }
+    50% { text-shadow: 0 0 50px #FF6B6B, 0 0 30px #FFD700; }
+  }
+
+  .welcome-card h1 {
+    font-size: 5rem;
+    font-family: 'Orbitron', monospace;
+    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 5px;
+  }
+
+  .welcome-card h2 {
+    font-size: 2rem;
+    color: white;
+    margin: 20px 0;
+    font-family: 'Orbitron', monospace;
+  }
+
+  .welcome-card p {
+    color: rgba(255,215,0,0.8);
+    font-size: 1.2rem;
+  }
+
+  .owner-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid #FFD700;
+    margin: 20px auto;
+    object-fit: cover;
+    box-shadow: 0 0 30px rgba(255,215,0,0.5);
+  }
+
+  /* Main Content - Hidden Initially */
+  .main-content {
+    opacity: 0;
+    animation: fadeInMain 0.8s ease forwards 2.5s;
+  }
+
+  @keyframes fadeInMain {
+    to { opacity: 1; }
+  }
+
+  /* Floating Particles */
   .particles {
     position: fixed;
     top: 0;
@@ -123,7 +211,6 @@ const getHTML = () => `<!DOCTYPE html>
     background: radial-gradient(circle, rgba(255,215,0,0.8), rgba(255,107,107,0.4));
     border-radius: 50%;
     animation: float 8s infinite ease-in-out;
-    filter: blur(3px);
   }
 
   @keyframes float {
@@ -132,223 +219,162 @@ const getHTML = () => `<!DOCTYPE html>
   }
 
   .container {
-    max-width: 1300px;
+    max-width: 1400px;
     margin: 0 auto;
+    padding: 20px;
     position: relative;
     z-index: 2;
   }
 
-  /* Glowing Header */
+  /* Header */
   .header {
     text-align: center;
-    margin-bottom: 40px;
-    animation: glowPulse 2s infinite, slideDown 0.8s ease;
-  }
-
-  @keyframes glowPulse {
-    0%, 100% { text-shadow: 0 0 20px rgba(255,107,107,0.5); }
-    50% { text-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 60px rgba(255,107,107,0.6); }
-  }
-
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-50px); }
-    to { opacity: 1; transform: translateY(0); }
+    margin-bottom: 30px;
   }
 
   .header h1 {
-    font-size: 4rem;
+    font-size: 3.5rem;
     font-family: 'Orbitron', monospace;
-    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347, #FF6B6B);
+    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
   }
 
   .glow-text {
     font-size: 1rem;
     color: #FFD700;
     letter-spacing: 4px;
-    word-break: keep-all;
-    display: inline-block;
     background: rgba(0,0,0,0.5);
     padding: 5px 20px;
     border-radius: 50px;
-    backdrop-filter: blur(5px);
+    display: inline-block;
   }
 
-  /* Premium Card */
-  .premium-card {
-    background: rgba(20, 20, 50, 0.7);
-    backdrop-filter: blur(15px);
-    border-radius: 40px;
-    padding: 35px;
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    box-shadow: 0 25px 45px rgba(0,0,0,0.4), 0 0 30px rgba(255,107,107,0.2);
-    transition: all 0.4s;
+  /* Category Tabs */
+  .category-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
   }
 
-  /* Preview Area 3D */
+  .tab-btn {
+    background: linear-gradient(135deg, #1f1f3f, #15152f);
+    border: 2px solid rgba(255,215,0,0.3);
+    padding: 12px 30px;
+    border-radius: 50px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, #FFD700, #FF6B6B);
+    color: #0a0a2a;
+    border-color: white;
+    box-shadow: 0 0 20px rgba(255,215,0,0.5);
+  }
+
+  /* Preview Area */
   .preview-3d {
     background: linear-gradient(145deg, #1a1a3a, #0f0f2a);
     border-radius: 30px;
     padding: 25px;
     margin-bottom: 30px;
     border: 1px solid rgba(255,215,0,0.5);
-    box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-    transition: transform 0.3s;
-  }
-
-  .preview-3d:hover {
-    transform: translateY(-5px);
   }
 
   .preview-box {
     background: rgba(0,0,0,0.4);
     border-radius: 25px;
-    min-height: 380px;
+    min-height: 350px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 2px dashed rgba(255,215,0,0.5);
-    transition: all 0.3s;
   }
 
   .preview-image {
     max-width: 100%;
-    max-height: 340px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-height: 320px;
+    border-radius: 15px;
     border: 2px solid #FFD700;
   }
 
-  .placeholder-icon {
-    text-align: center;
-    color: rgba(255,215,0,0.6);
-  }
-
-  .placeholder-icon i {
-    font-size: 5rem;
-    margin-bottom: 15px;
-    display: block;
-  }
-
-  /* Style Grid - Neon Cards */
-  .section-title {
-    text-align: center;
-    margin: 30px 0 20px;
-    font-size: 1.8rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #FFD700, #FF6B6B);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .neon-grid {
+  /* Style Grid */
+  .style-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
   }
 
-  .neon-btn {
+  .style-btn {
     background: linear-gradient(145deg, #1f1f3f, #15152f);
-    border: none;
-    padding: 18px 10px;
-    border-radius: 25px;
+    border: 1px solid rgba(255,215,0,0.3);
+    padding: 15px 10px;
+    border-radius: 15px;
     color: white;
     font-weight: bold;
-    font-size: 1.2rem;
     cursor: pointer;
     transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-    font-family: 'Orbitron', monospace;
-    border: 1px solid rgba(255,215,0,0.3);
+    text-align: center;
   }
 
-  .neon-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent);
-    transition: left 0.5s;
-  }
-
-  .neon-btn:hover::before {
-    left: 100%;
-  }
-
-  .neon-btn:hover {
-    transform: translateY(-5px) scale(1.05);
+  .style-btn:hover {
+    transform: translateY(-3px);
     border-color: #FFD700;
-    box-shadow: 0 0 20px rgba(255,215,0,0.5);
+    box-shadow: 0 0 15px rgba(255,215,0,0.3);
   }
 
-  .neon-btn.selected {
+  .style-btn.selected {
     background: linear-gradient(135deg, #FFD700, #FF6B6B);
     color: #0a0a2a;
-    text-shadow: none;
     border-color: white;
-    box-shadow: 0 0 30px rgba(255,215,0,0.8);
-  }
-
-  .style-name {
-    font-size: 0.7rem;
-    opacity: 0.8;
-    margin-top: 8px;
-    font-family: 'Poppins', sans-serif;
   }
 
   /* Upload Zone */
   .upload-zone {
     background: linear-gradient(145deg, #1f1f3f, #15152f);
     border-radius: 25px;
-    padding: 20px;
+    padding: 25px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s;
     border: 2px dashed rgba(255,215,0,0.4);
-    margin-bottom: 20px;
+    margin: 20px 0;
+    transition: all 0.3s;
   }
 
   .upload-zone:hover {
     border-color: #FFD700;
-    background: linear-gradient(145deg, #25254a, #1a1a3a);
     transform: scale(1.01);
   }
 
   .upload-zone i {
     font-size: 3rem;
     color: #FFD700;
-    margin-bottom: 10px;
   }
 
-  /* Glow Button */
+  /* Create Button */
   .glow-button {
     width: 100%;
-    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347);
+    background: linear-gradient(135deg, #FFD700, #FF6B6B);
     border: none;
     padding: 18px;
     border-radius: 50px;
     color: #0a0a2a;
     font-weight: 800;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    transition: all 0.3s;
     font-family: 'Orbitron', monospace;
-    letter-spacing: 2px;
+    transition: all 0.3s;
   }
 
   .glow-button:hover:not(:disabled) {
     transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(255,215,0,0.6);
-    letter-spacing: 4px;
+    box-shadow: 0 10px 30px rgba(255,215,0,0.5);
   }
 
   .glow-button:disabled {
@@ -356,11 +382,11 @@ const getHTML = () => `<!DOCTYPE html>
     cursor: not-allowed;
   }
 
-  /* Result Card */
+  /* Result */
   .result-card {
     margin-top: 30px;
     background: linear-gradient(145deg, #1a1a3a, #0f0f2a);
-    border-radius: 30px;
+    border-radius: 25px;
     padding: 25px;
     text-align: center;
     border: 1px solid #FFD700;
@@ -369,191 +395,200 @@ const getHTML = () => `<!DOCTYPE html>
 
   .result-image {
     max-width: 100%;
-    border-radius: 20px;
-    margin: 20px 0;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 15px;
+    margin: 15px 0;
     border: 3px solid #FFD700;
   }
 
-  .download-neon {
+  .download-btn {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: #4CAF50;
     color: white;
-    padding: 14px 35px;
+    padding: 12px 30px;
     border-radius: 50px;
     text-decoration: none;
     font-weight: bold;
-    transition: 0.3s;
-    margin-top: 10px;
   }
 
-  .download-neon:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px #4CAF50;
-  }
-
-  /* Loading Animation */
-  .loading-overlay {
+  .loading {
     display: none;
     text-align: center;
     padding: 30px;
   }
 
-  .ring {
-    display: inline-block;
-    width: 80px;
-    height: 80px;
+  .spinner {
+    width: 60px;
+    height: 60px;
     border: 4px solid rgba(255,215,0,0.3);
-    border-radius: 50%;
     border-top-color: #FFD700;
-    animation: spin 1s ease-in-out infinite;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
   }
 
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
 
-  .file-status {
-    text-align: center;
-    margin-top: 10px;
-    color: #FFD700;
-    font-size: 0.85rem;
-  }
-
-  /* Footer */
   .footer {
     text-align: center;
-    margin-top: 35px;
+    margin-top: 30px;
     color: rgba(255,215,0,0.6);
-    font-size: 0.8rem;
   }
 
-  @media (max-width: 680px) {
+  @media (max-width: 768px) {
     .header h1 { font-size: 2rem; }
-    .neon-grid { gap: 12px; }
-    .neon-btn { padding: 12px 5px; font-size: 1rem; }
-    .glow-button { font-size: 1rem; padding: 14px; }
+    .style-grid { gap: 10px; }
+    .style-btn { padding: 10px 5px; font-size: 0.8rem; }
   }
 </style>
 </head>
 <body>
-<div class="particles" id="particles"></div>
-<div class="container">
-  <div class="header">
-    <h1>👑 MISS ALIYA STUDIO 👑</h1>
-    <div class="glow-text">✦ PROFESSIONAL COVER DP MAKER ✦</div>
-  </div>
 
-  <div class="premium-card">
-    <div class="preview-3d">
-      <div class="preview-box" id="previewBox">
-        <div class="placeholder-icon">
-          <i class="fas fa-crown"></i>
-          <p>Your Masterpiece Awaits</p>
-          <p style="font-size: 0.8rem;">⬇ Upload & Select Style ⬇</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-title">
-      <i class="fas fa-magic"></i> SELECT YOUR STYLE <i class="fas fa-star"></i>
-    </div>
-    <div class="neon-grid" id="styleGrid">
-      <button class="neon-btn" data-style="1">❶<br><span class="style-name">ROSE</span></button>
-      <button class="neon-btn" data-style="2">❷<br><span class="style-name">HEART</span></button>
-      <button class="neon-btn" data-style="3">❸<br><span class="style-name">ELEGANT</span></button>
-      <button class="neon-btn" data-style="4">❹<br><span class="style-name">GOLDEN</span></button>
-      <button class="neon-btn" data-style="5">❺<br><span class="style-name">PINK</span></button>
-      <button class="neon-btn" data-style="6">❻<br><span class="style-name">MODERN</span></button>
-      <button class="neon-btn" data-style="7">❼<br><span class="style-name">CLASSIC</span></button>
-    </div>
-
-    <div class="upload-zone" id="uploadZone">
-      <i class="fas fa-cloud-upload-alt"></i>
-      <p><strong>CLICK OR DRAG & DROP</strong><br>Your High Quality Photo</p>
-      <input type="file" id="imageInput" accept="image/*" style="display: none;">
-    </div>
-    <div class="file-status" id="fileStatus">⚡ No image selected ⚡</div>
-
-    <button class="glow-button" id="createBtn" disabled>
-      <i class="fas fa-gem"></i> CREATE COVER DP <i class="fas fa-gem"></i>
-    </button>
-
-    <div class="loading-overlay" id="loadingOverlay">
-      <div class="ring"></div>
-      <p style="margin-top: 15px; color:#FFD700;">✨ Processing with AI Magic ✨</p>
-    </div>
-
-    <div class="result-card" id="resultCard">
-      <h3><i class="fas fa-check-circle"></i> YOUR EXCLUSIVE COVER DP</h3>
-      <img class="result-image" id="resultImg" alt="Cover DP">
-      <a href="#" id="downloadLink" class="download-neon" download="miss_aliya_cover.png">
-        <i class="fas fa-download"></i> DOWNLOAD NOW
-      </a>
-    </div>
-  </div>
-  <div class="footer">
-    <i class="fas fa-heart" style="color:#FF6B6B;"></i> DEVELOPED WITH PRECISION BY MISS ALIYA <i class="fas fa-heart" style="color:#FF6B6B;"></i>
+<!-- WELCOME SCREEN -->
+<div class="welcome-screen" id="welcomeScreen">
+  <div class="welcome-card">
+    <img src="https://i.ibb.co/Yt1YtKpZ/file-00000000d27471fa8382db8cabb463b2.png" class="owner-img" alt="MISS ALIYA" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23FFD700%22/><text x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22%230a0a2a%22 font-size=%2230%22>👑</text></svg>'">
+    <h1>MISS ALIYA</h1>
+    <h2>✨ STUDIO ✨</h2>
+    <p>Professional Cover & Frame DP Maker</p>
+    <p style="font-size: 0.8rem; margin-top: 20px;">Loading...</p>
   </div>
 </div>
 
+<div class="particles" id="particles"></div>
+
+<div class="main-content">
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-crown"></i> MISS ALIYA STUDIO <i class="fas fa-crown"></i></h1>
+    <div class="glow-text">✦ PREMIUM DP MAKER ✦</div>
+  </div>
+
+  <div class="category-tabs">
+    <button class="tab-btn active" data-cat="cover">📸 COVER DP <span style="font-size:0.7rem;">(7)</span></button>
+    <button class="tab-btn" data-cat="frame">🖼️ FRAME DP <span style="font-size:0.7rem;">(9)</span></button>
+  </div>
+
+  <div class="preview-3d">
+    <div class="preview-box" id="previewBox">
+      <div style="text-align:center; color:#FFD700;">
+        <i class="fas fa-cloud-upload-alt" style="font-size:3rem;"></i>
+        <p>Your masterpiece will appear here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cover DP Grid (16 styles total - 7 Cover + 9 Frame) -->
+  <div id="coverGrid" class="style-grid">
+    ${[1,2,3,4,5,6,7].map(i => `<button class="style-btn" data-cat="cover" data-style="${i}">${i}️⃣<br>${coverTemplates[i].name}</button>`).join('')}
+  </div>
+
+  <div id="frameGrid" class="style-grid" style="display:none;">
+    ${[1,2,3,4,5,6,7,8,9].map(i => `<button class="style-btn" data-cat="frame" data-style="${i}">${i}️⃣<br>${frameTemplates[i].name}</button>`).join('')}
+  </div>
+
+  <div class="upload-zone" id="uploadZone">
+    <i class="fas fa-cloud-upload-alt"></i>
+    <p><strong>CLICK OR DRAG & DROP</strong><br>Your High Quality Photo</p>
+    <input type="file" id="imageInput" accept="image/*" style="display:none;">
+  </div>
+  <div id="fileStatus" style="text-align:center; margin:10px; color:#FFD700; font-size:0.85rem;">⚡ No image selected ⚡</div>
+
+  <button class="glow-button" id="createBtn" disabled>
+    <i class="fas fa-magic"></i> CREATE PREMIUM DP <i class="fas fa-magic"></i>
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top:15px; color:#FFD700;">✨ MISS ALIYA IS CREATING YOUR DP ✨</p>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <h3><i class="fas fa-check-circle"></i> YOUR PREMIUM DP IS READY!</h3>
+    <img class="result-image" id="resultImage" alt="Your DP">
+    <a href="#" id="downloadLink" class="download-btn" download="miss_aliya_dp.png"><i class="fas fa-download"></i> DOWNLOAD NOW</a>
+  </div>
+
+  <div class="footer">
+    <i class="fas fa-heart" style="color:#FF6B6B;"></i> CREATED WITH LOVE BY MISS ALIYA <i class="fas fa-heart" style="color:#FF6B6B;"></i>
+  </div>
+</div>
+</div>
+
 <script>
+  // Create particles
   function createParticles() {
-    const particlesContainer = document.getElementById('particles');
-    for(let i = 0; i < 45; i++) {
-      const particle = document.createElement('div');
-      particle.classList.add('particle');
-      particle.style.width = Math.random() * 8 + 2 + 'px';
-      particle.style.height = particle.style.width;
-      particle.style.left = Math.random() * 100 + '%';
-      particle.style.top = Math.random() * 100 + '%';
-      particle.style.animationDelay = Math.random() * 8 + 's';
-      particle.style.animationDuration = Math.random() * 6 + 5 + 's';
-      particlesContainer.appendChild(particle);
+    const container = document.getElementById('particles');
+    for(let i = 0; i < 50; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      p.style.width = Math.random() * 10 + 2 + 'px';
+      p.style.height = p.style.width;
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = Math.random() * 100 + '%';
+      p.style.animationDelay = Math.random() * 10 + 's';
+      p.style.animationDuration = Math.random() * 8 + 5 + 's';
+      container.appendChild(p);
     }
   }
   createParticles();
 
+  let selectedCategory = 'cover';
   let selectedStyle = null;
   let uploadedImage = null;
 
-  document.querySelectorAll('.neon-btn').forEach(btn => {
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.neon-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedCategory = btn.dataset.cat;
+      selectedStyle = null;
+      document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
+      
+      if(selectedCategory === 'cover') {
+        document.getElementById('coverGrid').style.display = 'grid';
+        document.getElementById('frameGrid').style.display = 'none';
+      } else {
+        document.getElementById('coverGrid').style.display = 'none';
+        document.getElementById('frameGrid').style.display = 'grid';
+      }
+      checkReady();
+    });
+  });
+
+  // Style selection
+  document.querySelectorAll('.style-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       selectedStyle = btn.dataset.style;
       checkReady();
     });
   });
 
+  // Upload handling
   const uploadZone = document.getElementById('uploadZone');
   const fileInput = document.getElementById('imageInput');
-  uploadZone.addEventListener('click', () => fileInput.click());
-  uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadZone.style.borderColor = '#FFD700';
-    uploadZone.style.transform = 'scale(1.01)';
-  });
-  uploadZone.addEventListener('dragleave', () => {
-    uploadZone.style.borderColor = 'rgba(255,215,0,0.4)';
-    uploadZone.style.transform = 'scale(1)';
-  });
-  uploadZone.addEventListener('drop', (e) => {
+  
+  uploadZone.onclick = () => fileInput.click();
+  uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.style.borderColor = '#FFD700'; };
+  uploadZone.ondragleave = () => { uploadZone.style.borderColor = 'rgba(255,215,0,0.4)'; };
+  uploadZone.ondrop = (e) => {
     e.preventDefault();
     uploadZone.style.borderColor = 'rgba(255,215,0,0.4)';
     const file = e.dataTransfer.files[0];
     if(file && file.type.startsWith('image/')) handleImage(file);
-  });
+  };
 
-  fileInput.addEventListener('change', (e) => {
-    if(e.target.files[0]) handleImage(e.target.files[0]);
-  });
+  fileInput.onchange = (e) => { if(e.target.files[0]) handleImage(e.target.files[0]); };
 
   function handleImage(file) {
     uploadedImage = file;
-    document.getElementById('fileStatus').innerHTML = '<i class="fas fa-check-circle"></i> Selected: ' + file.name;
+    document.getElementById('fileStatus').innerHTML = '<i class="fas fa-check-circle"></i> Selected: ' + file.name.slice(0,30);
     const reader = new FileReader();
     reader.onload = (ev) => {
       document.getElementById('previewBox').innerHTML = '<img src="'+ev.target.result+'" class="preview-image" alt="Preview">';
@@ -566,29 +601,34 @@ const getHTML = () => `<!DOCTYPE html>
     document.getElementById('createBtn').disabled = !(selectedStyle && uploadedImage);
   }
 
-  document.getElementById('createBtn').addEventListener('click', async () => {
+  // Create DP
+  document.getElementById('createBtn').onclick = async () => {
     if(!selectedStyle || !uploadedImage) return;
+    
     const formData = new FormData();
     formData.append('image', uploadedImage);
+    formData.append('type', selectedCategory);
     formData.append('style', selectedStyle);
+    
     document.getElementById('createBtn').disabled = true;
-    document.getElementById('loadingOverlay').style.display = 'block';
+    document.getElementById('loading').style.display = 'block';
     document.getElementById('resultCard').style.display = 'none';
+    
     try {
       const response = await fetch('/create', { method: 'POST', body: formData });
-      if(!response.ok) throw new Error('Server Error');
+      if(!response.ok) throw new Error('Server error');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      document.getElementById('resultImg').src = url;
+      document.getElementById('resultImage').src = url;
       document.getElementById('downloadLink').href = url;
       document.getElementById('resultCard').style.display = 'block';
     } catch(err) {
       alert('Error: ' + err.message);
     } finally {
       document.getElementById('createBtn').disabled = false;
-      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
     }
-  });
+  };
 </script>
 </body>
 </html>`;
@@ -597,9 +637,10 @@ app.get('/', (req, res) => res.send(getHTML()));
 
 app.post('/create', upload.single('image'), async (req, res) => {
   try {
+    const type = req.body.type;
     const styleId = parseInt(req.body.style);
     const imageBuffer = fs.readFileSync(req.file.path);
-    const outputPath = await processImage(imageBuffer, styleId);
+    const outputPath = await processImage(imageBuffer, type, styleId);
     res.sendFile(path.resolve(outputPath), () => {
       try { fs.unlinkSync(req.file.path); } catch(e) {}
       try { fs.unlinkSync(outputPath); } catch(e) {}
@@ -610,4 +651,4 @@ app.post('/create', upload.single('image'), async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log('🚀 MISS ALIYA STUDIO RUNNING on port', PORT));
+app.listen(PORT, () => console.log('👑 MISS ALIYA STUDIO RUNNING on port', PORT));
