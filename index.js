@@ -37,8 +37,27 @@ const frameTemplates = {
   9: { url: "https://i.ibb.co/s9dHV7K1/6aa4dc51020a.jpg", width: 200, height: 300, posX: 89, posY: 43, name: "Frame 9" }
 };
 
-async function downloadTemplate(url, styleId, type) {
-  const templatePath = path.join(cacheDir, `${type}_${styleId}.png`);
+// ========== PAIR DP TEMPLATES (15) ==========
+const pairTemplates = {
+  1: { url: "https://i.ibb.co/Zptb9xJ2/803a8e8cc475.jpg", shape: "circle", size1: 230, size2: 230, x1: 10, y1: 5, x2: 245, y2: 5, name: "Pair 1" },
+  2: { url: "https://i.ibb.co/q3DDkP9D/9fe55575821c.jpg", shape: "circle", size1: 117, size2: 117, x1: 48, y1: 175, x2: 310, y2: 170, name: "Pair 2" },
+  3: { url: "https://i.ibb.co/LDpk5SGX/39cb5df1b030.jpg", shape: "circle", size1: 120, size2: 120, x1: 66, y1: 114, x2: 240, y2: 114, name: "Pair 3" },
+  4: { url: "https://i.ibb.co/2e3d1e0cfa8a.jpg", shape: "circle", size1: 218, size2: 218, x1: 86, y1: 95, x2: 435, y2: 98, name: "Pair 4" },
+  5: { url: "https://i.ibb.co/0e465782e95a.jpg", shape: "circle", size1: 240, size2: 242, x1: 45, y1: 118, x2: 433, y2: 116, name: "Pair 5" },
+  6: { url: "https://i.ibb.co/4d9f6c32ac89.jpg", shape: "square", size1: 110, size2: 110, x1: 131, y1: 88, x2: 292, y2: 88, name: "Pair 6" },
+  7: { url: "https://i.ibb.co/44083411ce02.jpg", shape: "heart", size1: 210, size2: 210, x1: 28, y1: 134, x2: 268, y2: 140, name: "Pair 7" },
+  8: { url: "https://i.ibb.co/d57df01d663b.jpg", shape: "circle", size1: 280, size2: 280, x1: 63, y1: 80, x2: 525, y2: 88, name: "Pair 8" },
+  9: { url: "https://i.ibb.co/bb84c4de0b9c.jpg", shape: "circle", size1: 160, size2: 160, x1: 85, y1: 160, x2: 590, y2: 160, name: "Pair 9" },
+  10: { url: "https://i.ibb.co/63caff53d8d5.jpg", shape: "circle", size1: 180, size2: 180, x1: 123, y1: 160, x2: 493, y2: 160, name: "Pair 10" },
+  11: { url: "https://i.ibb.co/c6b869aae271.jpg", shape: "circle", size1: 140, size2: 140, x1: 23, y1: 140, x2: 310, y2: 138, name: "Pair 11" },
+  12: { url: "https://i.ibb.co/69c73e098eb0.jpg", shape: "circle", size1: 190, size2: 190, x1: 178, y1: 140, x2: 450, y2: 150, name: "Pair 12" },
+  13: { url: "https://i.ibb.co/b9946659be99.jpg", shape: "circle", size1: 250, size2: 250, x1: 55, y1: 205, x2: 565, y2: 25, name: "Pair 13" },
+  14: { url: "https://i.ibb.co/d24adccf0acc.jpg", shape: "circle", size1: 220, size2: 220, x1: 130, y1: 125, x2: 500, y2: 125, name: "Pair 14" },
+  15: { url: "https://i.ibb.co/WBZBPcJ/gifpair.gif", shape: "gif", name: "Pair 15 (GIF)" }
+};
+
+async function downloadTemplate(url, id, type) {
+  const templatePath = path.join(cacheDir, `${type}_${id}.png`);
   if (fs.existsSync(templatePath)) return templatePath;
   const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 30000 });
   fs.writeFileSync(templatePath, Buffer.from(response.data));
@@ -49,14 +68,29 @@ async function makeCircleImage(buffer, size) {
   const image = await Jimp.read(buffer);
   image.resize(size, size);
   const mask = new Jimp(size, size, 0x00000000);
+  const center = size / 2;
   const radius = size / 2;
-  for (let x = 0; x < size; x++) {
-    for (let y = 0; y < size; y++) {
-      const dx = x - radius;
-      const dy = y - radius;
-      if (Math.sqrt(dx * dx + dy * dy) <= radius) {
-        mask.setPixelColor(0xFFFFFFFF, x, y);
-      }
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dist = Math.sqrt((x - center) ** 2 + (y - center) ** 2);
+      if (dist <= radius) mask.setPixelColor(0xFFFFFFFF, x, y);
+    }
+  }
+  image.mask(mask, 0, 0);
+  return image;
+}
+
+async function makeHeartImage(buffer, size) {
+  const image = await Jimp.read(buffer);
+  image.resize(size, size);
+  const mask = new Jimp(size, size, 0x00000000);
+  const cx = size / 2, cy = size / 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const nx = (x - cx) / cx * 2.6;
+      const ny = (y - cy) / cy * 2.8;
+      const heart = Math.pow(nx*nx + ny*ny - 1, 3) - nx*nx * Math.pow(ny, 3);
+      if (heart <= 0) mask.setPixelColor(0xFFFFFFFF, x, y);
     }
   }
   image.mask(mask, 0, 0);
@@ -64,46 +98,67 @@ async function makeCircleImage(buffer, size) {
 }
 
 async function processImage(imageBuffer, type, styleId) {
-  let config, templatePath;
-  
-  if (type === 'cover') {
-    config = coverTemplates[styleId];
-    templatePath = await downloadTemplate(config.url, styleId, 'cover');
-  } else {
-    config = frameTemplates[styleId];
-    templatePath = await downloadTemplate(config.url, styleId, 'frame');
-  }
-  
-  let template = await Jimp.read(templatePath);
-  let userImage;
-  
-  if (type === 'cover' && config.shape === 'circle') {
-    userImage = await makeCircleImage(imageBuffer, config.size);
-    template.composite(userImage, config.posX, config.posY);
-  } else {
-    userImage = await Jimp.read(imageBuffer);
-    let width = config.width;
-    let height = config.height;
-    userImage.resize(width, height);
-    
-    let posX = config.posX;
-    if (posX === "auto") {
-      posX = (template.bitmap.width - width) / 2;
-    }
-    template.composite(userImage, posX, config.posY);
-  }
-  
-  const outputPath = path.join(cacheDir, `output_${Date.now()}.png`);
-  await template.writeAsync(outputPath);
-  return outputPath;
+  if (type === 'cover') return processCover(imageBuffer, styleId);
+  if (type === 'frame') return processFrame(imageBuffer, styleId);
+  return processPair(imageBuffer, styleId);
 }
 
-// ========== STUNNING HTML WITH WELCOME SCREEN ==========
+async function processCover(buffer, id) {
+  const config = coverTemplates[id];
+  const templatePath = await downloadTemplate(config.url, id, 'cover');
+  let template = await Jimp.read(templatePath);
+  let userImg;
+  if (config.shape === 'circle') {
+    userImg = await makeCircleImage(buffer, config.size);
+    template.composite(userImg, config.posX, config.posY);
+  } else {
+    userImg = await Jimp.read(buffer);
+    userImg.resize(config.width, config.height);
+    template.composite(userImg, config.posX, config.posY);
+  }
+  const outPath = path.join(cacheDir, `out_${Date.now()}.png`);
+  await template.writeAsync(outPath);
+  return outPath;
+}
+
+async function processFrame(buffer, id) {
+  const config = frameTemplates[id];
+  const templatePath = await downloadTemplate(config.url, id, 'frame');
+  let template = await Jimp.read(templatePath);
+  let userImg = await Jimp.read(buffer);
+  userImg.resize(config.width, config.height);
+  let x = config.posX === 'auto' ? (template.bitmap.width - config.width) / 2 : config.posX;
+  template.composite(userImg, x, config.posY);
+  const outPath = path.join(cacheDir, `out_${Date.now()}.png`);
+  await template.writeAsync(outPath);
+  return outPath;
+}
+
+async function processPair(buffer, id) {
+  const config = pairTemplates[id];
+  if (config.shape === 'gif') {
+    const templatePath = await downloadTemplate(config.url, id, 'pair');
+    const outPath = path.join(cacheDir, `out_${Date.now()}.png`);
+    fs.copyFileSync(templatePath, outPath);
+    return outPath;
+  }
+  const templatePath = await downloadTemplate(config.url, id, 'pair');
+  let template = await Jimp.read(templatePath);
+  let userImg1 = await (config.shape === 'heart' ? makeHeartImage(buffer, config.size1) : makeCircleImage(buffer, config.size1));
+  let userImg2 = await (config.shape === 'heart' ? makeHeartImage(buffer, config.size2) : makeCircleImage(buffer, config.size2));
+  template.composite(userImg1, config.x1, config.y1);
+  template.composite(userImg2, config.x2, config.y2);
+  const outPath = path.join(cacheDir, `out_${Date.now()}.png`);
+  await template.writeAsync(outPath);
+  return outPath;
+}
+
+// HTML - STUNNING WELCOME + SLIDING NAME + YOUR IMAGE
 const getHTML = () => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>👑 MISS ALIYA | PREMIUM DP STUDIO 👑</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -117,7 +172,7 @@ const getHTML = () => `<!DOCTYPE html>
     overflow-x: hidden;
   }
 
-  /* Welcome Screen Overlay */
+  /* WELCOME SCREEN - ULTRA PREMIUM */
   .welcome-screen {
     position: fixed;
     top: 0;
@@ -129,136 +184,112 @@ const getHTML = () => `<!DOCTYPE html>
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: fadeOut 3s ease forwards 2s;
+    animation: fadeOut 3.5s ease forwards 2.5s;
   }
 
   @keyframes fadeOut {
-    0% { opacity: 1; visibility: visible; }
-    70% { opacity: 1; }
+    0%, 70% { opacity: 1; visibility: visible; }
     100% { opacity: 0; visibility: hidden; }
   }
 
   .welcome-card {
     text-align: center;
-    animation: zoomIn 0.8s ease, glowPulse 2s infinite;
+    animation: zoomIn 0.8s ease;
   }
 
   @keyframes zoomIn {
-    from { transform: scale(0.3); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from { transform: scale(0.2) rotate(-10deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
   }
 
-  @keyframes glowPulse {
+  /* SLIDING NAME EFFECT */
+  .sliding-name {
+    font-size: 4.5rem;
+    font-family: 'Orbitron', monospace;
+    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347, #FF6B6B);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    animation: slideIn 1.5s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(-100%); opacity: 0; letter-spacing: 30px; }
+    to { transform: translateX(0); opacity: 1; letter-spacing: 8px; }
+  }
+
+  .glow-sub {
+    font-size: 1.8rem;
+    color: #FFD700;
+    text-shadow: 0 0 20px #FFD700, 0 0 40px #FF6B6B;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
     0%, 100% { text-shadow: 0 0 20px #FFD700; }
     50% { text-shadow: 0 0 50px #FF6B6B, 0 0 30px #FFD700; }
   }
 
-  .welcome-card h1 {
-    font-size: 5rem;
-    font-family: 'Orbitron', monospace;
-    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    letter-spacing: 5px;
-  }
-
-  .welcome-card h2 {
-    font-size: 2rem;
-    color: white;
-    margin: 20px 0;
-    font-family: 'Orbitron', monospace;
-  }
-
-  .welcome-card p {
-    color: rgba(255,215,0,0.8);
-    font-size: 1.2rem;
-  }
-
-  .owner-img {
-    width: 150px;
-    height: 150px;
+  .owner-img-welcome {
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
-    border: 4px solid #FFD700;
+    border: 5px solid #FFD700;
     margin: 20px auto;
     object-fit: cover;
-    box-shadow: 0 0 30px rgba(255,215,0,0.5);
+    box-shadow: 0 0 40px rgba(255,215,0,0.6);
+    animation: float 3s ease-in-out infinite;
   }
 
-  /* Main Content - Hidden Initially */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+
+  .attitude-text {
+    font-size: 1.2rem;
+    color: rgba(255,215,0,0.8);
+    margin-top: 20px;
+    font-weight: 600;
+    letter-spacing: 3px;
+  }
+
+  /* MAIN CONTENT */
   .main-content {
     opacity: 0;
-    animation: fadeInMain 0.8s ease forwards 2.5s;
+    animation: fadeInMain 0.8s ease forwards 3s;
   }
 
   @keyframes fadeInMain {
     to { opacity: 1; }
   }
 
-  /* Floating Particles */
-  .particles {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-  }
-
+  .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
   .particle {
     position: absolute;
     background: radial-gradient(circle, rgba(255,215,0,0.8), rgba(255,107,107,0.4));
     border-radius: 50%;
-    animation: float 8s infinite ease-in-out;
+    animation: particleFloat 8s infinite ease-in-out;
   }
-
-  @keyframes float {
+  @keyframes particleFloat {
     0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
     50% { transform: translateY(-30px) translateX(20px); opacity: 0.8; }
   }
 
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-    position: relative;
-    z-index: 2;
-  }
-
-  /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-
+  .container { max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 2; }
+  .header { text-align: center; margin-bottom: 30px; }
   .header h1 {
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-family: 'Orbitron', monospace;
-    background: linear-gradient(135deg, #FFD700, #FF6B6B, #FFB347);
+    background: linear-gradient(135deg, #FFD700, #FF6B6B);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-
-  .glow-text {
-    font-size: 1rem;
-    color: #FFD700;
-    letter-spacing: 4px;
-    background: rgba(0,0,0,0.5);
-    padding: 5px 20px;
-    border-radius: 50px;
-    display: inline-block;
-  }
-
-  /* Category Tabs */
-  .category-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-
+  .category-tabs { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
   .tab-btn {
     background: linear-gradient(135deg, #1f1f3f, #15152f);
     border: 2px solid rgba(255,215,0,0.3);
@@ -269,15 +300,12 @@ const getHTML = () => `<!DOCTYPE html>
     cursor: pointer;
     transition: all 0.3s;
   }
-
   .tab-btn.active {
     background: linear-gradient(135deg, #FFD700, #FF6B6B);
     color: #0a0a2a;
     border-color: white;
     box-shadow: 0 0 20px rgba(255,215,0,0.5);
   }
-
-  /* Preview Area */
   .preview-3d {
     background: linear-gradient(145deg, #1a1a3a, #0f0f2a);
     border-radius: 30px;
@@ -285,7 +313,6 @@ const getHTML = () => `<!DOCTYPE html>
     margin-bottom: 30px;
     border: 1px solid rgba(255,215,0,0.5);
   }
-
   .preview-box {
     background: rgba(0,0,0,0.4);
     border-radius: 25px;
@@ -295,47 +322,33 @@ const getHTML = () => `<!DOCTYPE html>
     justify-content: center;
     border: 2px dashed rgba(255,215,0,0.5);
   }
-
-  .preview-image {
-    max-width: 100%;
-    max-height: 320px;
-    border-radius: 15px;
-    border: 2px solid #FFD700;
-  }
-
-  /* Style Grid */
+  .preview-image { max-width: 100%; max-height: 320px; border-radius: 15px; border: 2px solid #FFD700; }
   .style-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 12px;
     margin: 20px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
   }
-
   .style-btn {
     background: linear-gradient(145deg, #1f1f3f, #15152f);
     border: 1px solid rgba(255,215,0,0.3);
-    padding: 15px 10px;
-    border-radius: 15px;
+    padding: 12px 5px;
+    border-radius: 12px;
     color: white;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    text-align: center;
+    font-size: 0.8rem;
   }
-
-  .style-btn:hover {
-    transform: translateY(-3px);
-    border-color: #FFD700;
-    box-shadow: 0 0 15px rgba(255,215,0,0.3);
-  }
-
-  .style-btn.selected {
+  .style-btn:hover, .style-btn.selected {
     background: linear-gradient(135deg, #FFD700, #FF6B6B);
     color: #0a0a2a;
     border-color: white;
+    transform: scale(1.02);
   }
-
-  /* Upload Zone */
   .upload-zone {
     background: linear-gradient(145deg, #1f1f3f, #15152f);
     border-radius: 25px;
@@ -344,20 +357,7 @@ const getHTML = () => `<!DOCTYPE html>
     cursor: pointer;
     border: 2px dashed rgba(255,215,0,0.4);
     margin: 20px 0;
-    transition: all 0.3s;
   }
-
-  .upload-zone:hover {
-    border-color: #FFD700;
-    transform: scale(1.01);
-  }
-
-  .upload-zone i {
-    font-size: 3rem;
-    color: #FFD700;
-  }
-
-  /* Create Button */
   .glow-button {
     width: 100%;
     background: linear-gradient(135deg, #FFD700, #FF6B6B);
@@ -369,20 +369,8 @@ const getHTML = () => `<!DOCTYPE html>
     font-size: 1.3rem;
     cursor: pointer;
     font-family: 'Orbitron', monospace;
-    transition: all 0.3s;
   }
-
-  .glow-button:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(255,215,0,0.5);
-  }
-
-  .glow-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Result */
+  .glow-button:disabled { opacity: 0.5; cursor: not-allowed; }
   .result-card {
     margin-top: 30px;
     background: linear-gradient(145deg, #1a1a3a, #0f0f2a);
@@ -392,14 +380,7 @@ const getHTML = () => `<!DOCTYPE html>
     border: 1px solid #FFD700;
     display: none;
   }
-
-  .result-image {
-    max-width: 100%;
-    border-radius: 15px;
-    margin: 15px 0;
-    border: 3px solid #FFD700;
-  }
-
+  .result-image { max-width: 100%; border-radius: 15px; margin: 15px 0; border: 3px solid #FFD700; }
   .download-btn {
     display: inline-flex;
     align-items: center;
@@ -409,15 +390,8 @@ const getHTML = () => `<!DOCTYPE html>
     padding: 12px 30px;
     border-radius: 50px;
     text-decoration: none;
-    font-weight: bold;
   }
-
-  .loading {
-    display: none;
-    text-align: center;
-    padding: 30px;
-  }
-
+  .loading { display: none; text-align: center; padding: 30px; }
   .spinner {
     width: 60px;
     height: 60px;
@@ -427,34 +401,25 @@ const getHTML = () => `<!DOCTYPE html>
     animation: spin 1s linear infinite;
     margin: 0 auto;
   }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .footer {
-    text-align: center;
-    margin-top: 30px;
-    color: rgba(255,215,0,0.6);
-  }
-
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .footer { text-align: center; margin-top: 30px; color: rgba(255,215,0,0.6); }
   @media (max-width: 768px) {
-    .header h1 { font-size: 2rem; }
-    .style-grid { gap: 10px; }
-    .style-btn { padding: 10px 5px; font-size: 0.8rem; }
+    .sliding-name { font-size: 2rem; letter-spacing: 3px; }
+    .glow-sub { font-size: 1rem; }
+    .owner-img-welcome { width: 120px; height: 120px; }
+    .header h1 { font-size: 1.8rem; }
+    .style-btn { font-size: 0.7rem; padding: 8px 3px; }
   }
 </style>
 </head>
 <body>
 
-<!-- WELCOME SCREEN -->
 <div class="welcome-screen" id="welcomeScreen">
   <div class="welcome-card">
-    <img src="https://i.ibb.co/Yt1YtKpZ/file-00000000d27471fa8382db8cabb463b2.png" class="owner-img" alt="MISS ALIYA" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23FFD700%22/><text x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22%230a0a2a%22 font-size=%2230%22>👑</text></svg>'">
-    <h1>MISS ALIYA</h1>
-    <h2>✨ STUDIO ✨</h2>
-    <p>Professional Cover & Frame DP Maker</p>
-    <p style="font-size: 0.8rem; margin-top: 20px;">Loading...</p>
+    <img src="https://i.ibb.co/rG46PWKB/file-00000000d27471fa8382db8cabb463b2.png" class="owner-img-welcome" alt="MISS ALIYA" onerror="this.src='https://i.ibb.co/rG46PWKB/file-00000000d27471fa8382db8cabb463b2.png'">
+    <div class="sliding-name">👑 MISS ALIYA 👑</div>
+    <div class="glow-sub">✦ THE ATTITUDE STUDIO ✦</div>
+    <div class="attitude-text"><i class="fas fa-crown"></i> ROYAL • PREMIUM • EXCLUSIVE <i class="fas fa-crown"></i></div>
   </div>
 </div>
 
@@ -463,172 +428,48 @@ const getHTML = () => `<!DOCTYPE html>
 <div class="main-content">
 <div class="container">
   <div class="header">
-    <h1><i class="fas fa-crown"></i> MISS ALIYA STUDIO <i class="fas fa-crown"></i></h1>
-    <div class="glow-text">✦ PREMIUM DP MAKER ✦</div>
+    <h1><i class="fas fa-gem"></i> MISS ALIYA STUDIO <i class="fas fa-gem"></i></h1>
   </div>
 
   <div class="category-tabs">
     <button class="tab-btn active" data-cat="cover">📸 COVER DP <span style="font-size:0.7rem;">(7)</span></button>
     <button class="tab-btn" data-cat="frame">🖼️ FRAME DP <span style="font-size:0.7rem;">(9)</span></button>
+    <button class="tab-btn" data-cat="pair">👫 PAIR DP <span style="font-size:0.7rem;">(15)</span></button>
   </div>
 
   <div class="preview-3d">
-    <div class="preview-box" id="previewBox">
-      <div style="text-align:center; color:#FFD700;">
-        <i class="fas fa-cloud-upload-alt" style="font-size:3rem;"></i>
-        <p>Your masterpiece will appear here</p>
-      </div>
-    </div>
+    <div class="preview-box" id="previewBox"><div style="color:#FFD700;"><i class="fas fa-cloud-upload-alt" style="font-size:3rem;"></i><p>Your masterpiece will appear here</p></div></div>
   </div>
 
-  <!-- Cover DP Grid (16 styles total - 7 Cover + 9 Frame) -->
-  <div id="coverGrid" class="style-grid">
-    ${[1,2,3,4,5,6,7].map(i => `<button class="style-btn" data-cat="cover" data-style="${i}">${i}️⃣<br>${coverTemplates[i].name}</button>`).join('')}
-  </div>
+  <div id="coverGrid" class="style-grid">${[1,2,3,4,5,6,7].map(i => `<button class="style-btn" data-cat="cover" data-style="${i}">${i}️⃣<br>${coverTemplates[i].name}</button>`).join('')}</div>
+  <div id="frameGrid" class="style-grid" style="display:none;">${[1,2,3,4,5,6,7,8,9].map(i => `<button class="style-btn" data-cat="frame" data-style="${i}">${i}️⃣<br>${frameTemplates[i].name}</button>`).join('')}</div>
+  <div id="pairGrid" class="style-grid" style="display:none;">${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(i => `<button class="style-btn" data-cat="pair" data-style="${i}">${i}️⃣<br>${pairTemplates[i].name}</button>`).join('')}</div>
 
-  <div id="frameGrid" class="style-grid" style="display:none;">
-    ${[1,2,3,4,5,6,7,8,9].map(i => `<button class="style-btn" data-cat="frame" data-style="${i}">${i}️⃣<br>${frameTemplates[i].name}</button>`).join('')}
-  </div>
+  <div class="upload-zone" id="uploadZone"><i class="fas fa-cloud-upload-alt"></i><p><strong>CLICK OR DRAG & DROP</strong><br>Your Photo</p><input type="file" id="imageInput" accept="image/*" style="display:none;"></div>
+  <div id="fileStatus" style="text-align:center; margin:10px; color:#FFD700;">⚡ Ready ⚡</div>
 
-  <div class="upload-zone" id="uploadZone">
-    <i class="fas fa-cloud-upload-alt"></i>
-    <p><strong>CLICK OR DRAG & DROP</strong><br>Your High Quality Photo</p>
-    <input type="file" id="imageInput" accept="image/*" style="display:none;">
-  </div>
-  <div id="fileStatus" style="text-align:center; margin:10px; color:#FFD700; font-size:0.85rem;">⚡ No image selected ⚡</div>
+  <button class="glow-button" id="createBtn" disabled><i class="fas fa-magic"></i> CREATE PREMIUM DP <i class="fas fa-magic"></i></button>
 
-  <button class="glow-button" id="createBtn" disabled>
-    <i class="fas fa-magic"></i> CREATE PREMIUM DP <i class="fas fa-magic"></i>
-  </button>
-
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <p style="margin-top:15px; color:#FFD700;">✨ MISS ALIYA IS CREATING YOUR DP ✨</p>
-  </div>
-
-  <div class="result-card" id="resultCard">
-    <h3><i class="fas fa-check-circle"></i> YOUR PREMIUM DP IS READY!</h3>
-    <img class="result-image" id="resultImage" alt="Your DP">
-    <a href="#" id="downloadLink" class="download-btn" download="miss_aliya_dp.png"><i class="fas fa-download"></i> DOWNLOAD NOW</a>
-  </div>
-
-  <div class="footer">
-    <i class="fas fa-heart" style="color:#FF6B6B;"></i> CREATED WITH LOVE BY MISS ALIYA <i class="fas fa-heart" style="color:#FF6B6B;"></i>
-  </div>
-</div>
-</div>
+  <div class="loading" id="loading"><div class="spinner"></div><p style="margin-top:15px;">✨ MISS ALIYA IS CREATING ✨</p></div>
+  <div class="result-card" id="resultCard"><h3>✅ YOUR PREMIUM DP IS READY!</h3><img class="result-image" id="resultImage"><br><a href="#" id="downloadLink" class="download-btn" download="miss_aliya_dp.png"><i class="fas fa-download"></i> DOWNLOAD NOW</a></div>
+  <div class="footer"><i class="fas fa-heart" style="color:#FF6B6B;"></i> CREATED WITH ATTITUDE BY MISS ALIYA <i class="fas fa-heart" style="color:#FF6B6B;"></i></div>
+</div></div>
 
 <script>
-  // Create particles
-  function createParticles() {
-    const container = document.getElementById('particles');
-    for(let i = 0; i < 50; i++) {
-      const p = document.createElement('div');
-      p.classList.add('particle');
-      p.style.width = Math.random() * 10 + 2 + 'px';
-      p.style.height = p.style.width;
-      p.style.left = Math.random() * 100 + '%';
-      p.style.top = Math.random() * 100 + '%';
-      p.style.animationDelay = Math.random() * 10 + 's';
-      p.style.animationDuration = Math.random() * 8 + 5 + 's';
-      container.appendChild(p);
-    }
-  }
-  createParticles();
+function createParticles(){for(let i=0;i<60;i++){let p=document.createElement('div');p.classList.add('particle');p.style.width=Math.random()*10+2+'px';p.style.height=p.style.width;p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.animationDelay=Math.random()*10+'s';p.style.animationDuration=Math.random()*8+5+'s';document.getElementById('particles').appendChild(p);}}createParticles();
 
-  let selectedCategory = 'cover';
-  let selectedStyle = null;
-  let uploadedImage = null;
-
-  // Tab switching
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedCategory = btn.dataset.cat;
-      selectedStyle = null;
-      document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
-      
-      if(selectedCategory === 'cover') {
-        document.getElementById('coverGrid').style.display = 'grid';
-        document.getElementById('frameGrid').style.display = 'none';
-      } else {
-        document.getElementById('coverGrid').style.display = 'none';
-        document.getElementById('frameGrid').style.display = 'grid';
-      }
-      checkReady();
-    });
-  });
-
-  // Style selection
-  document.querySelectorAll('.style-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedStyle = btn.dataset.style;
-      checkReady();
-    });
-  });
-
-  // Upload handling
-  const uploadZone = document.getElementById('uploadZone');
-  const fileInput = document.getElementById('imageInput');
-  
-  uploadZone.onclick = () => fileInput.click();
-  uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.style.borderColor = '#FFD700'; };
-  uploadZone.ondragleave = () => { uploadZone.style.borderColor = 'rgba(255,215,0,0.4)'; };
-  uploadZone.ondrop = (e) => {
-    e.preventDefault();
-    uploadZone.style.borderColor = 'rgba(255,215,0,0.4)';
-    const file = e.dataTransfer.files[0];
-    if(file && file.type.startsWith('image/')) handleImage(file);
-  };
-
-  fileInput.onchange = (e) => { if(e.target.files[0]) handleImage(e.target.files[0]); };
-
-  function handleImage(file) {
-    uploadedImage = file;
-    document.getElementById('fileStatus').innerHTML = '<i class="fas fa-check-circle"></i> Selected: ' + file.name.slice(0,30);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      document.getElementById('previewBox').innerHTML = '<img src="'+ev.target.result+'" class="preview-image" alt="Preview">';
-    };
-    reader.readAsDataURL(file);
-    checkReady();
-  }
-
-  function checkReady() {
-    document.getElementById('createBtn').disabled = !(selectedStyle && uploadedImage);
-  }
-
-  // Create DP
-  document.getElementById('createBtn').onclick = async () => {
-    if(!selectedStyle || !uploadedImage) return;
-    
-    const formData = new FormData();
-    formData.append('image', uploadedImage);
-    formData.append('type', selectedCategory);
-    formData.append('style', selectedStyle);
-    
-    document.getElementById('createBtn').disabled = true;
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('resultCard').style.display = 'none';
-    
-    try {
-      const response = await fetch('/create', { method: 'POST', body: formData });
-      if(!response.ok) throw new Error('Server error');
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      document.getElementById('resultImage').src = url;
-      document.getElementById('downloadLink').href = url;
-      document.getElementById('resultCard').style.display = 'block';
-    } catch(err) {
-      alert('Error: ' + err.message);
-    } finally {
-      document.getElementById('createBtn').disabled = false;
-      document.getElementById('loading').style.display = 'none';
-    }
-  };
+let selectedCategory='cover',selectedStyle=null,uploadedImage=null;
+document.querySelectorAll('.tab-btn').forEach(btn=>{btn.onclick=()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');selectedCategory=btn.dataset.cat;selectedStyle=null;document.querySelectorAll('.style-btn').forEach(b=>b.classList.remove('selected'));document.getElementById('coverGrid').style.display=selectedCategory==='cover'?'grid':'none';document.getElementById('frameGrid').style.display=selectedCategory==='frame'?'grid':'none';document.getElementById('pairGrid').style.display=selectedCategory==='pair'?'grid':'none';checkReady();};});
+document.querySelectorAll('.style-btn').forEach(btn=>{btn.onclick=()=>{document.querySelectorAll('.style-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');selectedStyle=btn.dataset.style;checkReady();};});
+const uploadZone=document.getElementById('uploadZone'),fileInput=document.getElementById('imageInput');
+uploadZone.onclick=()=>fileInput.click();
+uploadZone.ondragover=e=>{e.preventDefault();uploadZone.style.borderColor='#FFD700';};
+uploadZone.ondragleave=()=>{uploadZone.style.borderColor='rgba(255,215,0,0.4)';};
+uploadZone.ondrop=e=>{e.preventDefault();uploadZone.style.borderColor='rgba(255,215,0,0.4)';const file=e.dataTransfer.files[0];if(file&&file.type.startsWith('image/'))handleImage(file);};
+fileInput.onchange=e=>{if(e.target.files[0])handleImage(e.target.files[0]);};
+function handleImage(file){uploadedImage=file;document.getElementById('fileStatus').innerHTML='✅ '+file.name.slice(0,30);const reader=new FileReader();reader.onload=ev=>{document.getElementById('previewBox').innerHTML='<img src="'+ev.target.result+'" class="preview-image">';};reader.readAsDataURL(file);checkReady();}
+function checkReady(){document.getElementById('createBtn').disabled=!(selectedStyle&&uploadedImage);}
+document.getElementById('createBtn').onclick=async()=>{if(!selectedStyle||!uploadedImage)return;const formData=new FormData();formData.append('image',uploadedImage);formData.append('type',selectedCategory);formData.append('style',selectedStyle);document.getElementById('createBtn').disabled=true;document.getElementById('loading').style.display='block';document.getElementById('resultCard').style.display='none';try{const response=await fetch('/create',{method:'POST',body:formData});if(!response.ok)throw new Error('Server error');const blob=await response.blob();const url=URL.createObjectURL(blob);document.getElementById('resultImage').src=url;document.getElementById('downloadLink').href=url;document.getElementById('resultCard').style.display='block';}catch(err){alert('Error: '+err.message);}finally{document.getElementById('createBtn').disabled=false;document.getElementById('loading').style.display='none';}};
 </script>
 </body>
 </html>`;
